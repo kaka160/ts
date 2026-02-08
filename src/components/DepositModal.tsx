@@ -33,12 +33,11 @@ const DepositModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     }, 2000);
   };
 
-  const handleDone = () => {
-    onSuccess(amount);
-    setStep(1);
-    onClose();
-  };
+const handleDone = () => {
 
+  setStep(1);
+  onClose(); // Chỉ đơn giản là đóng Modal
+};
   return (
     <div className="fixed inset-0 bg-black/70 z-[200] flex items-end sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10">

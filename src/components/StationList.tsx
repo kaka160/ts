@@ -1,66 +1,39 @@
-
 import React, { useState } from 'react';
 import { ChargingStation, StationStatus, ChargingPackage } from '../types';
 import { Power, MapPin, Zap, X, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   stations: ChargingStation[];
-  setStations: React.Dispatch<React.SetStateAction<ChargingStation[]>>;
-  balance: number;
-  addTransaction: (amount: number, description: string, type: 'charge' | 'deposit') => void;
+  // Bỏ setStations và addTransaction vì logic này do Firebase xử lý
+  onStartCharge: (pkg: ChargingPackage, stationId: string) => void;
+  onStopCharge: (stationId: string) => void;
 }
 
-// Fixed type errors by converting numeric values to strings to match the ChargingPackage interface definition
 const PACKAGES: ChargingPackage[] = [
-  { id: 'PK-1', name: 'Gói Tiết Kiệm', price: 20000, value: '5', type: 'kwh' },
-  { id: 'PK-2', name: 'Gói Tiêu Chuẩn', price: 50000, value: '12', type: 'kwh' },
-  { id: 'PK-3', name: 'Gói Đầy Bình', price: 100000, value: '25', type: 'kwh' },
+  { id: 'buy_01', name: 'Gói Tiết Kiệm', price: 20000, value: '5', type: 'kwh' },
+  { id: 'buy_02', name: 'Gói Tiêu Chuẩn', price: 50000, value: '12', type: 'kwh' },
+  { id: 'buy_03', name: 'Gói Đầy Bình', price: 100000, value: '25', type: 'kwh' },
 ];
 
-const StationList: React.FC<Props> = ({ stations, setStations, balance, addTransaction }) => {
+const StationList: React.FC<Props> = ({ stations, onStartCharge, onStopCharge }) => {
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [showPackages, setShowPackages] = useState(false);
 
   const handleStartCharge = (pkg: ChargingPackage) => {
-    if (balance < pkg.price) {
-      alert('Số dư tài khoản không đủ. Vui lòng nạp thêm!');
-      return;
-    }
-
     if (!selectedStationId) return;
 
-    setStations(prev => prev.map(s => {
-      if (s.id === selectedStationId) {
-        return {
-          ...s,
-          relayStatus: true,
-          status: StationStatus.CHARGING,
-          current: 12.5,
-          power: 2.8,
-        };
-      }
-      return s;
-    }));
-
-    addTransaction(-pkg.price, `Sạc gói ${pkg.name} tại trạm ${selectedStationId}`, 'charge');
+    // Chỉ gửi lệnh đi, không tự cập nhật UI tại đây
+    onStartCharge(pkg, selectedStationId);
+    
     setShowPackages(false);
     setSelectedStationId(null);
-  };
-
-  const stopCharge = (id: string) => {
-    setStations(prev => prev.map(s => {
-      if (s.id === id) {
-        return { ...s, relayStatus: false, status: StationStatus.ONLINE, current: 0, power: 0 };
-      }
-      return s;
-    }));
   };
 
   return (
     <div className="space-y-4">
       <div className="px-1 flex justify-between items-center">
         <h2 className="text-lg font-black text-gray-800">Trạm sạc lân cận</h2>
-        <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-lg">Cập nhật: 1s</span>
+        <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-lg">Trực tuyến</span>
       </div>
 
       {stations.map(station => (
@@ -104,7 +77,7 @@ const StationList: React.FC<Props> = ({ stations, setStations, balance, addTrans
             )}
             {station.status === StationStatus.CHARGING && (
               <button 
-                onClick={() => stopCharge(station.id)}
+                onClick={() => onStopCharge(station.id)}
                 className="bg-red-50 text-red-600 border border-red-100 px-6 py-2.5 rounded-2xl font-black text-sm active:scale-95 transition-all"
               >
                 Dừng sạc
@@ -114,7 +87,7 @@ const StationList: React.FC<Props> = ({ stations, setStations, balance, addTrans
         </div>
       ))}
 
-      {/* Package Selection Modal */}
+      {/* UI Gói sạc giữ nguyên */}
       {showPackages && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-end p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md mx-auto rounded-[2.5rem] p-6 animate-in slide-in-from-bottom-10">
@@ -150,7 +123,7 @@ const StationList: React.FC<Props> = ({ stations, setStations, balance, addTrans
 
             <div className="bg-blue-50 p-4 rounded-2xl flex items-center gap-3 border border-blue-100">
               <CheckCircle2 className="text-blue-600" size={20} />
-              <p className="text-[11px] text-blue-700 font-medium leading-tight">Số tiền sẽ được trừ trực tiếp vào ví EV Master của bạn sau khi xác nhận.</p>
+              <p className="text-[11px] text-blue-700 font-medium leading-tight">Sau khi gửi lệnh, hệ thống sẽ kiểm tra số dư và kích hoạt trạm tự động.</p>
             </div>
           </div>
         </div>
@@ -159,6 +132,7 @@ const StationList: React.FC<Props> = ({ stations, setStations, balance, addTrans
   );
 };
 
+// Các Helper Function giữ nguyên UI
 const Metric = ({ label, value }: any) => (
   <div className="text-center">
     <p className="text-[9px] text-gray-400 font-black uppercase mb-0.5 tracking-tighter">{label}</p>
